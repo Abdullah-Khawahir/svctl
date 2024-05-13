@@ -3,24 +3,30 @@ package uploader
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 const FailedUploadsFile = "FailedUploads.txt"
 const SuccessfulUploadFile = "SuccessfulUploads.txt"
 
-func SetFileAsSent(filepath string) {
-	file, err := os.OpenFile(SuccessfulUploadFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func  SetFileAsSent(path string) {
+	abs ,_ := filepath.Abs(path)
+	dir , _ := filepath.Split(abs)	
+	
+	file, err := os.OpenFile(dir + SuccessfulUploadFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}
 	defer file.Close()
 
-	file.WriteString(fmt.Sprintln(filepath))
+	file.WriteString(fmt.Sprintln(path))
 }
 
-func GetUploadedFiles() []string {
-	fileBytes, err := os.ReadFile(SuccessfulUploadFile)
+func GetUploadedFiles(path string) []string {
+	abs ,_ := filepath.Abs(path)
+	dir , _ := filepath.Split(abs)
+	fileBytes, err := os.ReadFile(dir + SuccessfulUploadFile)
 	if err != nil {
 		return nil
 	}
@@ -28,17 +34,22 @@ func GetUploadedFiles() []string {
 	return strings.Split(string(fileBytes), "\n")
 }
 
-func SetFileAsFailedToUpload(filepath string) {
-	file, err := os.OpenFile(FailedUploadsFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func SetFileAsFailedToUpload(path string) {
+	abs ,_ := filepath.Abs(path)
+	dir , _ := filepath.Split(abs)	
+	
+	file, err := os.OpenFile(dir + FailedUploadsFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}
 	defer file.Close()
 
-	file.WriteString(fmt.Sprintln(filepath))
+	file.WriteString(fmt.Sprintln(path))
 }
-func GetFailedFiles() []string {
-	fileBytes, err := os.ReadFile(FailedUploadsFile)
+func GetFailedFiles(path string ) []string {
+	abs ,_ := filepath.Abs(path)
+	dir , _ := filepath.Split(abs)
+	fileBytes, err := os.ReadFile(dir + FailedUploadsFile)
 	if err != nil {
 		return nil
 	}

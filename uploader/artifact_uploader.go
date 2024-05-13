@@ -56,11 +56,10 @@ func (config *ArtifactConfig) uploadFiles() {
 	for i := 0; i < len(config.Handlers); i++ {
 		handler := config.Handlers[i]
 		slices.Sort(handler.ArtifactList)
-		uploadedFiles := GetUploadedFiles()
-		failedFiles := GetFailedFiles()
-
 		for ii := 0; ii < len(handler.ArtifactList); ii++ {
 			file := handler.ArtifactList[ii]
+			uploadedFiles := GetUploadedFiles(file)
+			failedFiles := GetFailedFiles(file)
 			if slices.Contains(uploadedFiles, file) {
 				continue
 			}
@@ -71,11 +70,11 @@ func (config *ArtifactConfig) uploadFiles() {
 
 				if !slices.Contains(failedFiles, file) {
 					SetFileAsFailedToUpload(file)
-					failedFiles = GetFailedFiles()
+					failedFiles = GetFailedFiles(file)
 				}
 			} else {
 				SetFileAsSent(file)
-				uploadedFiles = GetUploadedFiles()
+				uploadedFiles = GetUploadedFiles(file)
 			}
 		}
 

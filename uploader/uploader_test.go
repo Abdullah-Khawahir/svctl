@@ -18,7 +18,7 @@ func TestFailedFiles(t *testing.T) {
 	SetFileAsFailedToUpload("f1.txt")
 	SetFileAsFailedToUpload("f2.txt")
 	expected := []string{"f1.txt", "f2.txt"}
-	got := GetFailedFiles()
+	got := GetFailedFiles("./f1.txt")
 	if !slices.Equal(expected, got) {
 		t.Errorf("expected %s but got %s", expected, got)
 	}
@@ -29,7 +29,7 @@ func TestSentFiles(t *testing.T) {
 	SetFileAsFailedToUpload("f1.txt")
 	SetFileAsFailedToUpload("f2.txt")
 	expected := []string{"f1.txt", "f2.txt"}
-	got := GetFailedFiles()
+	got := GetFailedFiles("./f1.txt")
 	if !slices.Equal(expected, got) {
 		t.Errorf("expected %s but got %s", expected, got)
 	}
@@ -38,7 +38,7 @@ func TestSentFiles(t *testing.T) {
 func TestSentFilesEmpty(t *testing.T) {
 	os.Remove(SuccessfulUploadFile)
 	var expected []string = nil
-	got := GetFailedFiles()
+	got := GetFailedFiles("./f1.txt")
 	if !slices.Equal(expected, got) {
 		t.Errorf("expected %s but got %s", expected, got)
 	}
