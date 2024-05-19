@@ -3,30 +3,32 @@ package uploader
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
-const FailedUploadsFile = "FailedUploads.txt"
-const SuccessfulUploadFile = "SuccessfulUploads.txt"
+const FailedUploadsFile = "%s-failed.txt"
+const SuccessfulUploadFile = "%s-uploaded.txt"
 
-func  SetFileAsSent(path string) {
-	abs ,_ := filepath.Abs(path)
-	dir , _ := filepath.Split(abs)	
-	
-	file, err := os.OpenFile(dir + SuccessfulUploadFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func (h ArtifactHandler) getTrackingFailedFile() string {
+	return fmt.Sprintf(FailedUploadsFile, h.Name)
+}
+
+func (h ArtifactHandler) getTrackingSuccessfulFile() string {
+	return fmt.Sprintf(SuccessfulUploadFile, h.Name)
+}
+
+func SetFileAsSent(handler ArtifactHandler, pathToSet string) {
+	file, err := os.OpenFile(handler.getTrackingFailedFile(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}
 	defer file.Close()
 
-	file.WriteString(fmt.Sprintln(path))
+	file.WriteString(fmt.Sprintln(pathToSet))
 }
 
-func GetUploadedFiles(path string) []string {
-	abs ,_ := filepath.Abs(path)
-	dir , _ := filepath.Split(abs)
-	fileBytes, err := os.ReadFile(dir + SuccessfulUploadFile)
+func GetUploadedFiles(handler ArtifactHandler) []string {
+	fileBytes, err := os.ReadFile(handler.getTrackingSuccessfulFile())
 	if err != nil {
 		return nil
 	}
@@ -34,22 +36,17 @@ func GetUploadedFiles(path string) []string {
 	return strings.Split(string(fileBytes), "\n")
 }
 
-func SetFileAsFailedToUpload(path string) {
-	abs ,_ := filepath.Abs(path)
-	dir , _ := filepath.Split(abs)	
-	
-	file, err := os.OpenFile(dir + FailedUploadsFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func SetFileAsFailedToUpload(handler ArtifactHandler, pathToSet string) {
+	file, err := os.OpenFile(handler.getTrackingSuccessfulFile(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}
 	defer file.Close()
 
-	file.WriteString(fmt.Sprintln(path))
+	file.WriteString(fmt.Sprintln(pathToSet))
 }
-func GetFailedFiles(path string ) []string {
-	abs ,_ := filepath.Abs(path)
-	dir , _ := filepath.Split(abs)
-	fileBytes, err := os.ReadFile(dir + FailedUploadsFile)
+func GetFailedFiles(handler ArtifactHandler) []string {
+	fileBytes, err := os.ReadFile(handler.getTrackingSuccessfulFile())
 	if err != nil {
 		return nil
 	}
