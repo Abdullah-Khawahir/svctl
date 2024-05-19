@@ -1,6 +1,7 @@
 package uploader
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -17,6 +18,7 @@ type UploadStrategy interface {
 
 type ArtifactHandler struct {
 	ArtifactList []string
+	Name         string `yaml:"name"`
 	SourceRegex  string `yaml:"path"`
 	Destination  string `yaml:"destination"`
 	Uploader     UploadStrategy
@@ -40,11 +42,16 @@ func InitializeArtifactConfig(configPath string) (*ArtifactConfig, error) {
 		return nil, unmarshalErr
 	}
 
-	uploaderError := config.assignUploaders()
+	err := validate(config)
+	if err != nil {
+		return nil, err
+	}
 
+	uploaderError := config.assignUploaders()
 	if uploaderError != nil {
 		return nil, uploaderError
 	}
+
 	config.PopulateArtifactList()
 
 	config.uploadFiles()
@@ -52,14 +59,30 @@ func InitializeArtifactConfig(configPath string) (*ArtifactConfig, error) {
 	return config, nil
 }
 
+func validate(config *ArtifactConfig) error {
+	for i := range config.Handlers {
+		handler := config.Handlers[i]
+		if handler.Name == "" || len(handler.Name) == 0 {
+			return errors.New("each handler must have a name")
+		}
+		if handler.Destination == "" || len(handler.Destination) == 0 {
+			return errors.New("each handler must have a destination")
+		}
+		if handler.SourceRegex == "" || len(handler.SourceRegex) == 0 {
+			return errors.New("each handler must have a path")
+		}
+	}
+	return nil
+}
+
 func (config *ArtifactConfig) uploadFiles() {
-	for i := 0; i < len(config.Handlers); i++ {
+	for i := range config.Handlers {
 		handler := config.Handlers[i]
 		slices.Sort(handler.ArtifactList)
-		for ii := 0; ii < len(handler.ArtifactList); ii++ {
+		for ii := range handler.ArtifactList {
 			file := handler.ArtifactList[ii]
-			uploadedFiles := GetUploadedFiles(file)
-			failedFiles := GetFailedFiles(file)
+			uploadedFiles := GetUploadedFiles(handler)
+			failedFiles := GetFailedFiles(handler)
 			if slices.Contains(uploadedFiles, file) {
 				continue
 			}
@@ -69,12 +92,12 @@ func (config *ArtifactConfig) uploadFiles() {
 				log.Printf("Error uploading file %s: %v", file, err)
 
 				if !slices.Contains(failedFiles, file) {
-					SetFileAsFailedToUpload(file)
-					failedFiles = GetFailedFiles(file)
+					SetFileAsFailedToUpload(handler, file)
+					failedFiles = GetFailedFiles(handler)
 				}
 			} else {
-				SetFileAsSent(file)
-				uploadedFiles = GetUploadedFiles(file)
+				SetFileAsSent(handler, file)
+				uploadedFiles = GetUploadedFiles(handler)
 			}
 		}
 
