@@ -34,12 +34,9 @@ artifacts:
 	c, err := InitializeArtifactConfig(passingFilepath) // err = nil
 	assert.NoError(t, err, "the file contains all requirment it must not fail if it does update the requirment and update this message")
 	h1, h2 := c.Handlers[0], c.Handlers[1]
+
 	assert.Equal(t, h1.Name, "handler1")
-	assert.Equal(t, h2.Name, "handler2")
-
 	assert.Equal(t, h1.SourceRegex, "/path/to/source1")
-	assert.Equal(t, h2.SourceRegex, "/path/to/source2")
-
 	assert.Equal(t, h1.Destination, "http://path/to/destination1")
 
 	assert.Equal(t, "handler2", h2.Name)
@@ -71,13 +68,15 @@ func TestFailedFiles(t *testing.T) {
 		Name:         "test",
 		ArtifactList: []string{"f1.txt", "f2.txt"},
 	}
+
 	SetFileAsFailedToUpload(handler, "f1.txt")
 	SetFileAsFailedToUpload(handler, "f2.txt")
+
 	expected := []string{"f1.txt", "f2.txt"}
 	got := GetFailedFiles(handler)
-	if !slices.Equal(expected, got) {
-		t.Errorf("expected %s but got %s", expected, got)
-	}
+
+	assert.Equal(t, expected, got, "expected %s but got %s", expected, got)
+
 	defer deleteRecordFiles(handler)
 }
 func TestSentFiles(t *testing.T) {
@@ -103,9 +102,8 @@ func TestSentFilesEmpty(t *testing.T) {
 	}
 	var expected []string = nil
 	got := GetFailedFiles(handler)
-	if !slices.Equal(expected, got) {
-		t.Errorf("expected %s but got %s", expected, got)
-	}
+	assert.Equal(t, expected, got, "expected %s but got %s", expected, got)
+
 	defer deleteRecordFiles(handler)
 }
 
@@ -114,11 +112,6 @@ func TestHttpSecuredUpload(t *testing.T) {
 	files := []string{
 		createFile(t, "file1.log", "log file"),
 	}
-	defer func(files []string) {
-		for _, file := range files {
-			os.Remove(file)
-		}
-	}(files)
 
 	tls := httptest.NewTLSServer(http.HandlerFunc(handleLogFiles))
 	defer tls.Close()
@@ -136,15 +129,20 @@ func TestHttpSecuredUpload(t *testing.T) {
 		},
 	}
 
-	config.PopulateArtifactList()
+	config.populateArtifactList()
 
 	err := config.assignUploaders()
 	if err != nil {
 		t.Errorf("expected to assign httpUploader but it failed : %s", err.Error())
 	}
 
-	config.uploadFiles()
+	config.UploadFiles()
 	defer deleteRecordFiles(config.Handlers[0])
+	defer func(files []string) {
+		for _, file := range files {
+			os.Remove(file)
+		}
+	}(files)
 }
 func TestHttpUpload(t *testing.T) {
 	test = t
@@ -159,11 +157,6 @@ func TestHttpUpload(t *testing.T) {
 		createFile(t, "file2.txt", "text file"),
 	}
 
-	defer func(files []string) {
-		for _, file := range files {
-			os.Remove(file)
-		}
-	}(files)
 	var config ArtifactConfig = ArtifactConfig{
 		Handlers: []ArtifactHandler{
 			{
@@ -183,7 +176,7 @@ func TestHttpUpload(t *testing.T) {
 		},
 	}
 
-	config.PopulateArtifactList()
+	config.populateArtifactList()
 
 	if !strings.EqualFold(config.Handlers[0].ArtifactList[0], files[0]) {
 		t.Errorf("expected %s but found %s", files[0], config.Handlers[0].ArtifactList[0])
@@ -197,9 +190,14 @@ func TestHttpUpload(t *testing.T) {
 		t.Errorf("expected to assign httpUploader but it failed : %s", err.Error())
 	}
 
-	config.uploadFiles()
+	config.UploadFiles()
 	defer deleteRecordFiles(config.Handlers[0])
 	defer deleteRecordFiles(config.Handlers[1])
+	defer func(files []string) {
+		for _, file := range files {
+			os.Remove(file)
+		}
+	}(files)
 }
 
 func createFile(t *testing.T, filename string, fileContent string) string {

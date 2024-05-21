@@ -53,9 +53,7 @@ func InitializeArtifactConfig(configPath string) (*ArtifactConfig, error) {
 		return nil, uploaderError
 	}
 
-	config.PopulateArtifactList()
-
-	config.uploadFiles()
+	config.populateArtifactList()
 
 	return config, nil
 }
@@ -76,7 +74,7 @@ func validate(config *ArtifactConfig) error {
 	return nil
 }
 
-func (config *ArtifactConfig) uploadFiles() {
+func (config *ArtifactConfig) UploadFiles() {
 	for i := range config.Handlers {
 		handler := config.Handlers[i]
 		slices.Sort(handler.ArtifactList)
@@ -88,7 +86,7 @@ func (config *ArtifactConfig) uploadFiles() {
 				continue
 			}
 
-			err := handler.UploadFile(file)
+			err := handler.uploadFile(file)
 			if err != nil {
 				log.Printf("Error uploading file %s: %v", file, err)
 
@@ -106,7 +104,7 @@ func (config *ArtifactConfig) uploadFiles() {
 }
 
 // TODO: test for Glob err
-func (config *ArtifactConfig) PopulateArtifactList() {
+func (config *ArtifactConfig) populateArtifactList() {
 	for i := 0; i < len(config.Handlers); i++ {
 		handler := config.Handlers[i]
 		files, err := filepath.Glob(config.Handlers[i].SourceRegex)
@@ -119,7 +117,10 @@ func (config *ArtifactConfig) PopulateArtifactList() {
 	}
 }
 
-func (handler *ArtifactHandler) UploadFile(file string) error {
+func (handler *ArtifactHandler) uploadFile(file string) error {
+	if handler.Uploader == nil {
+		return errors.New("the value .Uploader is not set")
+	}
 	err := handler.Uploader.Upload(handler.Destination, file)
 	if err != nil {
 		return err
