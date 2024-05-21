@@ -8,18 +8,29 @@ import (
 	"os"
 )
 
-type HttpPostUploadStrategy struct{}
-type HttpSecuredPostUploadStrategy struct{}
+type HttpPostUploadStrategy struct {
+	httpHeaders map[string]string
+}
+type HttpSecuredPostUploadStrategy struct {
+	httpHeaders map[string]string
+}
 
 func (uploader HttpPostUploadStrategy) Upload(destination string, artifactPath string) error {
-
+	client := http.Client{}
 	fileBytes, err := os.ReadFile(artifactPath)
 	if err != nil {
 		return err
 	}
-	response, postErr := http.Post(destination, "text/plain", bytes.NewBuffer(fileBytes))
-	if postErr != nil {
-		return postErr
+	request, err := http.NewRequest("POST", destination, bytes.NewBuffer(fileBytes))
+	if err != nil {
+		return err
+	}
+	for k, v := range uploader.httpHeaders {
+		request.Header.Set(k, v)
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
@@ -38,7 +49,16 @@ func (uploader HttpSecuredPostUploadStrategy) Upload(destination string, artifac
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: transport}
-	response, err := client.Post(destination, "text/plain", bytes.NewBuffer(fileBytes))
+
+	request, err := http.NewRequest("POST", destination, bytes.NewBuffer(fileBytes))
+	if err != nil {
+		return err
+	}
+	for k, v := range uploader.httpHeaders {
+		request.Header.Set(k, v)
+	}
+
+	response, err := client.Do(request)
 	if err != nil {
 		return err
 	}

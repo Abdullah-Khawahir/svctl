@@ -22,6 +22,7 @@ type ArtifactHandler struct {
 	SourceRegex  string `yaml:"path"`
 	Destination  string `yaml:"destination"`
 	Uploader     UploadStrategy
+	Headers      map[string]string `yaml:"http-headers"`
 }
 
 type ArtifactConfig struct {
@@ -137,9 +138,13 @@ func (config *ArtifactConfig) assignUploaders() error {
 
 		switch URL.Scheme {
 		case "http":
-			config.Handlers[i].Uploader = HttpPostUploadStrategy{}
+			config.Handlers[i].Uploader = HttpPostUploadStrategy{
+				httpHeaders: handler.Headers,
+			}
 		case "https":
-			config.Handlers[i].Uploader = HttpSecuredPostUploadStrategy{}
+			config.Handlers[i].Uploader = HttpSecuredPostUploadStrategy{
+				httpHeaders: handler.Headers,
+			}
 		case "ftp":
 			{
 				username := URL.User.Username()
